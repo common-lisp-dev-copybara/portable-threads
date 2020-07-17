@@ -1102,11 +1102,21 @@
             #+new-locks
             (:constructor %make-recursive-lock)))
 
-#+(and sbcl sb-thread)
+#+(and sbcl sb-thread dontuse) 
 (defstruct (recursive-lock
             (:copier nil)
             (:constructor %make-recursive-lock))
   (mutex))
+#+(and sbcl sb-thread)                                                                                                                                                                                                                                                                   
+(progn                                                                                                                                                                                                                                                                                   
+(defun make-recursive-lock (&rest args)                                                                                                                                                                                                                                                  
+  (declare (ignore args))                                                                                                                                                                                                                                                                
+  (error "Subtyping a system-internal structure is not permitted"))                                                                                                                                                                                                                      
+(defun recursive-lock-p (x)                                                                                                                                                                                                                                                              
+  (declare (ignore x))                                                                                                                                                                                                                                                                   
+  ;; nothing is one if you can't make one                                                                                                                                                                                                                                                
+  nil))                                                                                                                                                                                                                                                                                  
+
 
 #+threads-not-available
 (progn
@@ -1838,7 +1848,9 @@
     ;; Help Lispworks be more aggressive in running function promptly:
     (mp:process-allow-scheduling))
   #+(and sbcl sb-thread)
-  (sb-thread:interrupt-thread thread #'(lambda () (apply function args)))
+  (handler-case                                                                                                                                                                                                                                                                          
+      (sb-thread:interrupt-thread thread #'(lambda () (apply function args)))                                                                                                                                                                                                            
+    (sb-thread:interrupt-thread-error (c) (declare (ignore c)) nil))                                                                                                                                                                                                                     
   #+scl
   (mp:process-interrupt thread #'(lambda () (apply function args)))
   #+threads-not-available
